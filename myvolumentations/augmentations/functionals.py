@@ -152,12 +152,12 @@ def resize(img, new_shape, interpolation=1):
     return new_img
 
 
-def rescale(img, scale, interpolation=1):
+def rescale(img, scale, interpolation=1, mode='constant', cval=0):
     """
     img: [H, W, D, C] or [H, W, D]
     scale: scalar float
     """
-    return skt.rescale(img, scale, order=interpolation, mode='constant', cval=0, clip=True, multichannel=True, anti_aliasing=False)
+    return skt.rescale(img, scale, order=interpolation, mode=mode, cval=cval, clip=True, multichannel=True, anti_aliasing=False)
     """
     shape = [int(scale * i) for i in img.shape[:3]]
     return resize(img, shape, interpolation)
@@ -165,10 +165,8 @@ def rescale(img, scale, interpolation=1):
 
 
 def gamma_transform(img, gamma, eps=1e-7):
-    mn = img.min()
-    rng = img.max() - mn
-    img = (img - mn)/(rng + eps)
-    return 255 * np.power(img, gamma)
+    img = np.power(img+eps, gamma)
+    return img
 
 
 def elastic_transform_pseudo2D(img, alpha, sigma, alpha_affine, interpolation=cv2.INTER_LINEAR, border_mode=cv2.BORDER_REFLECT_101, value=None, random_state=42, approximate=False):

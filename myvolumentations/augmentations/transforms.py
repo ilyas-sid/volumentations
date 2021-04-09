@@ -16,6 +16,16 @@ class Contiguous(DualTransform):
         return np.ascontiguousarray(img)
 
 
+class Clip(Transform):
+    def __init__(self, a_min, a_max, always_apply=True, p=1):
+        super().__init__(always_apply, p)
+        self.a_min = a_min
+        self.a_max = a_max
+
+    def apply(self, img):
+        return np.clip(img, self.a_min, self.a_max)
+
+
 class PadIfNeeded(DualTransform):
     def __init__(self, shape, border_mode='constant', value=0, mask_value=0, always_apply=False, p=1):
         super().__init__(always_apply, p)
@@ -58,19 +68,21 @@ class Resize(DualTransform):
 
 
 class RandomScale(DualTransform):
-    def __init__(self, scale_limit=[0.9, 1.1], interpolation=3, always_apply=False, p=0.5):
+    def __init__(self, scale_limit=[0.9, 1.1], interpolation=3, mode='constant', cval=0, always_apply=False, p=0.5):
         super().__init__(always_apply, p)
         self.scale_limit = scale_limit
         self.interpolation = interpolation
+        self.mode = mode
+        self.cval = cval
 
     def get_params(self, **data):
         return {"scale": random.uniform(self.scale_limit[0], self.scale_limit[1])}
 
     def apply(self, img, scale):
-        return F.rescale(img, scale, interpolation=self.interpolation)
+        return F.rescale(img, scale, interpolation=self.interpolation, mode=self.mode, cval=self.cval)
 
     def apply_to_mask(self, mask, scale):
-        return F.rescale(mask, scale, interpolation=0)
+        return F.rescale(mask, scale, interpolation=0, mode=self.mode, cval=self.cval)
 
 
 class RandomScale2(DualTransform):
@@ -140,6 +152,17 @@ class Normalize(Transform):
 
     def apply(self, img):
         return F.normalize(img, range_norm=self.range_norm)
+
+
+class NormalizeStatic(Transform):
+    def __init__(self, mean, std, max_val=255, always_apply=True, p=1.0):
+        super().__init__(always_apply, p)
+        self.mean = mean if not isinstance(mean, list) else np.array(mean)
+        self.std = std if not isinstance(std, list) else np.array(std)
+        self.max_val = max_val
+
+    def apply(self, img):
+        return (img / self.max_val - self.mean) / self.std
 
         
 class Transpose(DualTransform):
